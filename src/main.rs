@@ -13,7 +13,7 @@ use sphere::*;
 mod vec3;
 use vec3::*;
 
-struct Hit {
+struct Hit<'a> {
     // This hit is the intersection of an object
     // with a ray of the form A + t * B. This is the
     // t in that expression.
@@ -25,11 +25,64 @@ struct Hit {
     // The coordinates of the intersection point.
     p: Vec3,
     // The normal to the object at the point of the intersection.
-    normal: Vec3
+    normal: Vec3,
+    material: &'a dyn Material
 }
+
+// This design is a bit wonky - would probably be neater to say that
+// an object contains a Shape and a Material, both of which are enums
 
 trait Hittable {
     fn hit(&self, ray: Ray, t_min: f32, t_max: f32) -> Option<Hit>;
+}
+
+trait Material {
+    /// Returns (attenuation, scattered ray)
+    fn scatter(&self, ray: Ray, hit: &Hit) -> Option<(Vec3, Ray)>;
+}
+
+struct Lambertian {
+    albedo: Vec3
+}
+
+impl Lambertian {
+    fn new(r: f32, g: f32, b: f32) -> Lambertian {
+        Lambertian { albedo: Vec3::new(r, g, b) }
+    }
+}
+
+impl Material for Lambertian {
+    fn scatter(&self, ray: Ray, hit: &Hit) -> Option<(Vec3, Ray)> {
+        let target = hit.p + hit.normal + random_point_in_unit_sphere();
+        let scattered = Ray::new(hit.p, target - hit.p);
+        Some((self.albedo, scattered))
+    }
+}
+
+fn reflect(v: Vec3, normal: Vec3) -> Vec3 {
+    v - 2.0 * dot(v, normal) * normal
+}
+
+struct Metal {
+    albedo: Vec3
+}
+
+impl Metal {
+    fn new(r: f32, g: f32, b: f32) -> Metal {
+        Metal { albedo: Vec3::new(r, g, b) }
+    }
+}
+
+impl Material for Metal {
+    fn scatter(&self, ray: Ray, hit: &Hit) -> Option<(Vec3, Ray)> {
+        let reflected = reflect(unit_vector(ray.direction()), hit.normal);
+        let scattered = Ray::new(hit.p, reflected);
+        if dot(scattered.direction(), hit.normal) > 0.0 {
+            Some((self.albedo, scattered))
+        } else {
+            None
+        }
+    }
 }
 
 fn hit(world: &[Box<dyn Hittable>], ray: Ray, t_min: f32, t_max: f32) -> Option<Hit> {
@@ -57,10 +110,15 @@ fn random_point_in_unit_sphere() -> Vec3 {
     }
 }
 
-fn colour(ray: Ray, world: &[Box<dyn Hittable>]) -> Vec3 {
+fn colour(ray: Ray, world: &[Box<dyn Hittable>], depth: usize) -> Vec3 {
     if let Some(h) = hit(world, ray, 0.001, std::f32::MAX) {
-        let target = h.p + h.normal + random_point_in_unit_sphere();
-        return 0.5 * colour(Ray::new(h.p, target - h.p), world);
+        if depth >= 50 {
+            return Vec3::new(0.0, 0.0, 0.0);
+        }
+        if let Some(p) = h.material.scatter(ray, &h) {
+            return p.0 * colour(p.1, world, depth + 1);
+        }
+        return Vec3::new(0.0, 0.0, 0.0);
     }
 
     let unit_direction = unit_vector(ray.direction());
@@ -94,7 +152,7 @@ fn render(
                 let v = ((height - y - 1) as f32 + dv) / height as f32;
 
                 let r = camera.get_ray(u, v);
-                c += colour(r, world);
+                c += colour(r, world, 0);
             }
 
             c /= num_samples as f32;
@@ -114,24 +172,42 @@ fn render(
 
 fn world() -> Vec<Box<dyn Hittable>> {
     let r = PI / 4.0;
-    let s1 = Sphere::new(Vec3::new(-r, 0.0, -1.0), r);
-    let s2 = Sphere::new(Vec3::new( r, 0.0, -1.0), r);
-    vec![Box::new(s1), Box::new(s2)]
+    let s1 = Sphere::new(
+        Vec3::new(-r, 0.0, -1.0),
+        r,
+        Box::new(Lambertian::new(1.0, 0.5, 0.5))
+    );
+    let s2 = Sphere::new(
+        Vec3::new(r, 0.0, -1.0),
+        r,
+        Box::new(Lambertian::new(0.5, 0.5, 1.0))
+    );
+    let s3 = Sphere::new(
+        Vec3::new(3.0 * r, 0.0, -1.0),
+        r,
+        Box::new(Lambertian::new(0.5, 1.0, 0.5))
+    );
+    let s4 = Sphere::new(
+        Vec3::new(0.0, -100.5, -1.0),
+        100.0,
+        Box::new(Metal::new(0.7, 0.7, 0.7))
+    );
+    vec![Box::new(s1), Box::new(s2), Box::new(s3), Box::new(s4)]
 }
 
 fn main() {
     let (width, height, num_samples) = (200, 100, 100);
     let world = world();
-    let look_from = Vec3::new(-2.0, 2.0, 1.0);
+    let look_from = Vec3::new(0.0, 0.2, 1.0);
     let look_at = Vec3::new(0.0, 0.0, -1.0);
     let view_up = Vec3::new(0.0, 1.0, 0.0);
-    let focus_distance = (look_from - look_at).length();
-    let aperture = 2.0;
+    let focus_distance = 1.0;
+    let aperture = 0.01;
     let camera = Camera::new(
         look_from,
         look_at,
         view_up,
-        20.0,
+        120.0,
         width as f32 / height as f32,
         aperture,
         focus_distance

@@ -2,15 +2,17 @@
 use crate::{Hit, Hittable};
 use crate::vec3::*;
 use crate::ray::*;
+use crate::Material;
 
 pub struct Sphere {
     centre: Vec3,
-    radius: f32
+    radius: f32,
+    material: Box<dyn Material>
 }
 
 impl Sphere {
-    pub fn new(centre: Vec3, radius: f32) -> Sphere {
-        Sphere { centre, radius }
+    pub fn new(centre: Vec3, radius: f32, material: Box<dyn Material>) -> Sphere {
+        Sphere { centre, radius, material }
     }
 }
 
@@ -28,7 +30,8 @@ impl Hittable for Sphere {
                 return Some(Hit {
                     t,
                     p,
-                    normal: (p - self.centre) / self.radius
+                    normal: (p - self.centre) / self.radius,
+                    material: &*self.material
                 });
             }
             let t = (-b + discriminant.sqrt()) / a;
@@ -37,7 +40,8 @@ impl Hittable for Sphere {
                 return Some(Hit {
                     t,
                     p,
-                    normal: (p - self.centre) / self.radius
+                    normal: (p - self.centre) / self.radius,
+                    material: &*self.material
                 });
             }
         }

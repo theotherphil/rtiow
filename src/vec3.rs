@@ -68,6 +68,7 @@ macro_rules! impl_vec_vec_op {
 
 impl_vec_vec_op!(Add, add);
 impl_vec_vec_op!(Sub, sub);
+impl_vec_vec_op!(Mul, mul);
 
 impl AddAssign for Vec3 {
     fn add_assign(&mut self, other: Vec3) {
