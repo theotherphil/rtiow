@@ -1,7 +1,9 @@
 
 use std::ops::{
     Add,
+    AddAssign,
     Div,
+    DivAssign,
     Mul,
     Sub
 };
@@ -67,6 +69,14 @@ macro_rules! impl_vec_vec_op {
 impl_vec_vec_op!(Add, add);
 impl_vec_vec_op!(Sub, sub);
 
+impl AddAssign for Vec3 {
+    fn add_assign(&mut self, other: Vec3) {
+        self.e[0] += other.e[0];
+        self.e[1] += other.e[1];
+        self.e[2] += other.e[2];
+    }
+}
+
 impl Mul<Vec3> for f32 {
     type Output = Vec3;
 
@@ -89,5 +99,13 @@ impl Div<f32> for Vec3 {
 
     fn div(self, rhs: f32) -> Vec3 {
         Vec3::new(self.e[0] / rhs, self.e[1] / rhs, self.e[2] / rhs)
+    }
+}
+
+impl DivAssign<f32> for Vec3 {
+    fn div_assign(&mut self, rhs: f32) {
+        self.e[0] /= rhs;
+        self.e[1] /= rhs;
+        self.e[2] /= rhs;
     }
 }

@@ -1,4 +1,6 @@
 
+use rand::prelude::*;
+
 mod camera;
 use camera::*;
 mod image;
@@ -51,14 +53,26 @@ fn colour(ray: Ray, world: &[Box<dyn Hittable>]) -> Vec3 {
 }
 
 fn render(world: &[Box<dyn Hittable>], camera: &Camera) -> Image {
-    let (width, height) = (200, 100);
+    let (width, height, num_samples) = (200, 100, 100);
     let mut image = Image::new(width, height);
+    let mut rng = rand::thread_rng();
+
     for y in 0..height {
         for x in 0..width {
-            let u = x as f32 / width as f32;
-            let v = (height - y - 1) as f32 / height as f32;
-            let r = camera.get_ray(u, v);
-            let c = colour(r, world);
+            let mut c = Vec3::new(0.0, 0.0, 0.0);
+
+            for s in 0..num_samples {
+                let du: f32 = rng.gen();
+                let dv: f32 = rng.gen();
+
+                let u = (x as f32 + du) / width as f32;
+                let v = ((height - y - 1) as f32 + dv) / height as f32;
+
+                let r = camera.get_ray(u, v);
+                c += colour(r, world);
+            }
+
+            c /= num_samples as f32;
             let ir = (255.99 * c.r()) as u8;
             let ig = (255.99 * c.g()) as u8;
             let ib = (255.99 * c.b()) as u8;
