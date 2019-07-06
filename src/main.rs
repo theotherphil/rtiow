@@ -14,8 +14,17 @@ mod vec3;
 use vec3::*;
 
 struct Hit {
+    // This hit is the intersection of an object
+    // with a ray of the form A + t * B. This is the
+    // t in that expression.
+    //
+    // It's only used in the hit function taking world as
+    // its first argument, where it's used to determine which
+    // object hit is closest to the origin of the input ray.
     t: f32,
+    // The coordinates of the intersection point.
     p: Vec3,
+    // The normal to the object at the point of the intersection.
     normal: Vec3
 }
 
