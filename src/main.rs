@@ -116,12 +116,16 @@ fn main() {
     let look_from = Vec3::new(-2.0, 2.0, 1.0);
     let look_at = Vec3::new(0.0, 0.0, -1.0);
     let view_up = Vec3::new(0.0, 1.0, 0.0);
+    let focus_distance = (look_from - look_at).length();
+    let aperture = 2.0;
     let camera = Camera::new(
         look_from,
         look_at,
         view_up,
         20.0,
-        width as f32 / height as f32
+        width as f32 / height as f32,
+        aperture,
+        focus_distance
     );
     let image = render(
         width,
