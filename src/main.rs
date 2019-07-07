@@ -29,9 +29,6 @@ struct Hit<'a> {
     material: &'a dyn Material
 }
 
-// This design is a bit wonky - would probably be neater to say that
-// an object contains a Shape and a Material, both of which are enums
-
 trait Hittable {
     fn hit(&self, ray: Ray, t_min: f32, t_max: f32) -> Option<Hit>;
 }
@@ -152,6 +149,7 @@ fn render(
                 let v = ((height - y - 1) as f32 + dv) / height as f32;
 
                 let r = camera.get_ray(u, v);
+
                 c += colour(r, world, 0);
             }
 
@@ -171,34 +169,50 @@ fn render(
 }
 
 fn world() -> Vec<Box<dyn Hittable>> {
-    let r = PI / 4.0;
-    let s1 = Sphere::new(
-        Vec3::new(-r, 0.0, -1.0),
-        r,
-        Box::new(Lambertian::new(1.0, 0.5, 0.5))
-    );
-    let s2 = Sphere::new(
-        Vec3::new(r, 0.0, -1.0),
-        r,
-        Box::new(Lambertian::new(0.5, 0.5, 1.0))
-    );
+    let r = 1.0;
     let s3 = Sphere::new(
         Vec3::new(3.0 * r, 0.0, -1.0),
         r,
         Box::new(Lambertian::new(0.5, 1.0, 0.5))
     );
-    let s4 = Sphere::new(
-        Vec3::new(0.0, -100.5, -1.0),
-        100.0,
-        Box::new(Metal::new(0.7, 0.7, 0.7))
-    );
-    vec![Box::new(s1), Box::new(s2), Box::new(s3), Box::new(s4)]
+    vec![Box::new(s3)]
+
+    // let r = 1.0;
+    // let s1 = Sphere::new(
+    //     Vec3::new(-r, 0.0, -1.0),
+    //     r,
+    //     Box::new(Lambertian::new(1.0, 0.5, 0.5))
+    // );
+    // let s2 = Sphere::new(
+    //     Vec3::new(r, 0.0, -1.0),
+    //     r,
+    //     Box::new(Lambertian::new(0.5, 0.5, 1.0))
+    // );
+    // let s3 = Sphere::new(
+    //     Vec3::new(3.0 * r, 0.0, -1.0),
+    //     r,
+    //     Box::new(Lambertian::new(0.5, 1.0, 0.5))
+    // );
+    // let s4 = Sphere::new(
+    //     Vec3::new(0.0, -100.5, -1.0),
+    //     100.0,
+    //     Box::new(Metal::new(0.7, 0.7, 0.7))
+    // );
+    // vec![Box::new(s1), Box::new(s2), Box::new(s3), Box::new(s4)]
 }
 
+// The current design is a bit wonky - would probably be neater to say that
+// an object contains a Shape and a Material, both of which are enums.
+//
+// Useful feature if we used a window for this rather than just writing an
+// image: click on a pixel and generate trace info to show all the calculations
+// that caused it to have this value.
+
 fn main() {
-    let (width, height, num_samples) = (200, 100, 100);
+    //let (width, height, num_samples) = (200, 100, 100);
+    let (width, height, num_samples) = (100, 50, 1);
     let world = world();
-    let look_from = Vec3::new(0.0, 0.2, 1.0);
+    let look_from = Vec3::new(0.0, 0.0, 1.0);
     let look_at = Vec3::new(0.0, 0.0, -1.0);
     let view_up = Vec3::new(0.0, 1.0, 0.0);
     let focus_distance = 1.0;
